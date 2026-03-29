@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <sys/socket.h>
 
 constexpr uint16_t FLAG_DATA = 0x0001;
 constexpr uint16_t FLAG_ACK = 0x0002;
@@ -30,7 +31,7 @@ public:
   // socklen_t destlen); std::vector<uint8_t> recv_noblock(sockaddr* src =
   // nullptr, socklen_t* srclen = nullptr);
 private:
-  bool send_packet(const PacketHeader &header, const void *payload,
+  bool send_packet(const PacketHeader &header, const void *payload, size_t plen,
                    const sockaddr *dest, socklen_t destlen);
 
   bool recv_packet(PacketHeader &header, std::vector<uint8_t> &payload,
