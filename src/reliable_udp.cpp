@@ -132,6 +132,10 @@ void ReliableUDP::handle_packet(const Packet& packet, const sockaddr* src, sockl
       }
     } else {
       // Нефрагментированный пакет
+      // Если видим seq=0, сбрасываем ожидание (новый клиент)
+      if (packet.header.seq == 0) {
+        expected_seq_ = 0;
+      }
       if (packet.header.seq == expected_seq_) {
         expected_seq_++;
         if (receive_cb_) {
@@ -161,11 +165,15 @@ void ReliableUDP::process_send_queue() {
   while (!send_queue_.empty()) {
     auto& task = send_queue_.front();
     
-    uint32_t seq_start = next_seq_;
+    // Получаем hash адреса назначения для per-client sequence numbers
+    uint64_t addr_hash = hash_addr((sockaddr*)&task.dest, task.destlen);
+    uint32_t& client_seq = client_next_seq_[addr_hash];
+    
+    uint32_t seq_start = client_seq;
     uint32_t seq = seq_start;
     auto packets = fragmenter_.fragment(task.data.data(), task.data.size(),
                                         task.msg_id, seq);
-    next_seq_ = seq;
+    client_seq = seq;
     
     // Отправляем все фрагменты
     bool all_sent = true;
